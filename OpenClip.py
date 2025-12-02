@@ -1,6 +1,5 @@
 from PIL import Image
 import requests
-from transformers import AutoProcessor, CLIPVisionModelWithProjection
 import open_clip
 
 from tqdm.auto import tqdm
@@ -21,7 +20,11 @@ tokenizer = open_clip.get_tokenizer('ViT-B-32')
 df_words = pd.read_excel("Words_Hues&Clues_Eng.xlsx", index_col=0)
 
 # Generate the color images
-color_images = create_color_images('HC_RGB.csv')
+color_images, df_colors = create_color_images('HC_RGB.csv', return_df=True)
+
+# Preprocess the images
+color_images = torch.stack([preprocess(img) for img in color_images])
+print(f"Color images: {color_images.shape}")
 
 results = defaultdict(list)
 show_colors = True
@@ -29,27 +32,24 @@ show_colors = True
 # Iterate over all the words
 it = 0
 for word in tqdm(df_words.palabra.to_list()):
-# for word in ["EGG", "LEMON"]:
-    # Process the images and text
-    inputs = processor(text=[word], images=color_images, return_tensors="pt", padding=True)
+
+    text = tokenizer(word)
 
     # Get embeddings
     with torch.no_grad():
-        outputs = model(**inputs)
+        text_embeds = model.encode_text(text)
+        image_embeds = model.encode_image(color_images)
 
-    text_embeds = outputs.text_embeds
-    image_embeds = outputs.image_embeds
+        # Normalize embeddings
+        text_embeds /= text_embeds.norm(dim=-1, keepdim=True)
+        image_embeds /= image_embeds.norm(dim=-1, keepdim=True)
 
-    # Normalize embeddings
-    text_embeds /= text_embeds.norm(dim=-1, keepdim=True)
-    image_embeds /= image_embeds.norm(dim=-1, keepdim=True)
+        # Calculate cosine similarity
+        cosine_sim = (text_embeds @ image_embeds.T).squeeze(0)
 
-    # Calculate cosine similarity
-    cosine_sim = (text_embeds @ image_embeds.T).squeeze(0)
-
-    # Get top 5 colors
-    top5_indices = cosine_sim.argsort(descending=True)[:5]
-    top5_distances = cosine_sim.sort(descending=True)[0][:5]
+        # Get top 5 colors
+        top5_indices = cosine_sim.argsort(descending=True)[:5]
+        top5_distances = cosine_sim.sort(descending=True)[0][:5]
 
     # print(f"Top 5 colors for the word '{word}':")
 
@@ -60,7 +60,7 @@ for word in tqdm(df_words.palabra.to_list()):
         results[word].append(color_info.to_dict())
         # print(f"- Coords: ({color_info['coordenada_x']}, {color_info['coordenada_y']}), RGB: ({color_info['R']}, {color_info['G']}, {color_info['B']})")
         if show_colors:
-            axes[j].imshow(color_images[i.item()])
+            axes[j].imshow(color_images[i.item()].permute(1,2,0))
             axes[j].axis("off")
             axes[j].set_title(f"({color_info['coordenada_x']}, {color_info['coordenada_y']})")
     if show_colors:
@@ -69,23 +69,19 @@ for word in tqdm(df_words.palabra.to_list()):
         plt.close()
         # plt.show()
     it += 1
-    # if it == 5: break
+    if it == 5: break
 
 
+# Prepare the data to be stored in a CSV file
 flat_data = [
     {**record, 'word':word} 
     for word, records in results.items() 
     for record in records
 ]
 
-# 2. Create the DataFrame
+# Create the DataFrame
 df = pd.DataFrame(flat_data)
-
-# Optional: Reorder columns to put 'Animal' first
 cols = ['word'] + [c for c in df.columns if c != 'word']
 df = df[cols]
 
-df.head()
-
-df.to_csv("results_handc.csv", index=0)
-
+df.to_csv("results_openclip.csv", index=0)
