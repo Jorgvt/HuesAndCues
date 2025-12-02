@@ -25,7 +25,7 @@ names, dsts = df_names.model_name.to_list(), df_names.dataset.to_list()
 for name, dst in tqdm(zip(names, dsts)):
 
     print(f"Model: {name} | Dataset: {dst}")
-    if not os.path.exists(path_results:=os.path.join("Results", f"{name}-dst")):
+    if not os.path.exists(path_results:=os.path.join("Results", f"{name}-{dst}")):
         os.mkdir(path_results)
 
     if dst == "openai":
