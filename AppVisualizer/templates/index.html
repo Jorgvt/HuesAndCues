@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hues & Cues - Colorblind Response Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="brand-icon">HC</div>
+            <div class="brand-text">
+                <h1>Hues & Cues Visualizer</h1>
+                <p>Human vs. Colorblind Participant Response Analysis</p>
+            </div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-pill">
+                <span>Total Responses:</span>
+                <span class="val">3,899</span>
+            </div>
+            <div class="stat-pill">
+                <span>Unique Words:</span>
+                <span class="val">177</span>
+            </div>
+            <div class="stat-pill cb">
+                <span>★ Colorblind Users:</span>
+                <span class="val">9 (80 picks)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar Controls & Summaries -->
+        <aside class="sidebar">
+            <!-- Word Navigator Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🔍 Word Navigator</span>
+                </div>
+                <div class="filter-tabs">
+                    <button id="filter-all" class="tab-btn active">All Words (177)</button>
+                    <button id="filter-cb" class="tab-btn">★ Colorblind (54)</button>
+                </div>
+                <div class="select-group">
+                    <label for="word-select">Select Clue Word:</label>
+                    <div class="select-wrapper">
+                        <select id="word-select" class="form-control"></select>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button id="prev-btn" class="btn">◀ Prev</button>
+                    <button id="random-btn" class="btn">🎲 Random</button>
+                    <button id="next-btn" class="btn">Next ▶</button>
+                </div>
+            </div>
+
+            <!-- Current Word Summary Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📊 Word Summary</span>
+                    <span id="word-category" class="badge">CATEGORY</span>
+                </div>
+                <h2 id="word-title" class="word-title">WORD</h2>
+                
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">Total Picks</div>
+                        <div id="total-picks-val" class="value">0</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Colorblind Picks</div>
+                        <div id="cb-picks-val" class="value" style="color: var(--cb-gold);">0</div>
+                    </div>
+                    <div class="summary-item" style="grid-column: span 2;">
+                        <div class="label">Consensus Square (Mode)</div>
+                        <div class="value">
+                            <span id="consensus-swatch" class="color-swatch-sm"></span>
+                            <span id="consensus-val" style="font-size: 0.95rem;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colorblind Responses List Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">★ Colorblind Responses</span>
+                </div>
+                <div id="cb-list-container" class="cb-users-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Display Area (Board Grid) -->
+        <main class="display-area">
+            <div class="board-container-card">
+                <div class="board-toolbar">
+                    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.15rem; color: #fff;">
+                        🎨 Hues & Cues Board Grid (16 × 30)
+                    </div>
+                    <div class="toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="toggle-heatmap" checked>
+                            <span>Show Heatmap Overlay</span>
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="toggle-counts" checked>
+                            <span>Show Pick Counts</span>
+                        </label>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="toggle-cb" checked>
+                            <span style="color: var(--cb-gold);">★ Colorblind Markers</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Interactive Board Grid -->
+                <div class="board-wrapper">
+                    <div id="board-grid" class="board-grid-container">
+                        <!-- 16 x 30 grid loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Legend Bar -->
+                <div class="legend-bar">
+                    <div class="legend-item">
+                        <span style="color: var(--text-muted);">Pick Density:</span>
+                        <div class="legend-color-ramp"></div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Low → High</span>
+                    </div>
+                    <div class="legend-item" style="margin-left: 1.5rem;">
+                        <span class="legend-star">★</span>
+                        <span style="color: var(--cb-gold); font-weight: 600;">Golden Star Marker:</span>
+                        <span style="color: var(--text-muted);">Colorblind User Pick</span>
+                    </div>
+                    <div class="legend-item" style="margin-left: auto;">
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">Tip: Use ◀ / ▶ arrow keys to navigate words</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Hover Tooltip -->
+    <div id="cell-tooltip" class="cell-tooltip"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
