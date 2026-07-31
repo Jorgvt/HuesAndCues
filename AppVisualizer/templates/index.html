@@ -22,15 +22,15 @@
         <div class="header-stats">
             <div class="stat-pill">
                 <span>Total Responses:</span>
-                <span class="val">3,899</span>
+                <span id="stat-total-responses" class="val">—</span>
             </div>
             <div class="stat-pill">
                 <span>Unique Words:</span>
-                <span class="val">177</span>
+                <span id="stat-unique-words" class="val">—</span>
             </div>
             <div class="stat-pill cb">
                 <span>★ Colorblind Users:</span>
-                <span class="val">9 (80 picks)</span>
+                <span id="stat-cb-summary" class="val">—</span>
             </div>
         </div>
     </header>
@@ -45,8 +45,8 @@
                     <span class="card-title">🔍 Word Navigator</span>
                 </div>
                 <div class="filter-tabs">
-                    <button id="filter-all" class="tab-btn active">All Words (177)</button>
-                    <button id="filter-cb" class="tab-btn">★ Colorblind (54)</button>
+                    <button id="filter-all" class="tab-btn active">All Words (<span id="count-all">—</span>)</button>
+                    <button id="filter-cb" class="tab-btn">★ Colorblind (<span id="count-cb">—</span>)</button>
                 </div>
                 <div class="select-group">
                     <label for="word-select">Select Clue Word:</label>

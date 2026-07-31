@@ -34,11 +34,18 @@ const cbListContainer = document.getElementById('cb-list-container');
 const boardGrid = document.getElementById('board-grid');
 const cellTooltip = document.getElementById('cell-tooltip');
 
+// Header stat elements
+const statTotalResponses = document.getElementById('stat-total-responses');
+const statUniqueWords = document.getElementById('stat-unique-words');
+const statCbSummary = document.getElementById('stat-cb-summary');
+const countAll = document.getElementById('count-all');
+const countCb = document.getElementById('count-cb');
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     await fetchBoardData();
-    await fetchWordsList();
+    await Promise.all([fetchWordsList(), fetchHeaderStats()]);
     if (wordsList.length > 0) {
         await loadWord(wordsList[0].word);
     }
@@ -121,6 +128,31 @@ function setupEventListeners() {
         showCBMarkers = e.target.checked;
         updateBoardOverlay();
     });
+}
+
+// Fetch and display global header statistics
+async function fetchHeaderStats() {
+    try {
+        // All words (no filter) for totals
+        const [allWordsRes, cbUsersRes] = await Promise.all([
+            fetch('/api/words?only_cb=false'),
+            fetch('/api/colorblind_users')
+        ]);
+        const allWords = await allWordsRes.json();
+        const cbWords = allWords.filter(w => w.has_colorblind);
+        const cbUsers = await cbUsersRes.json();
+
+        const totalResponses = allWords.reduce((s, w) => s + w.total_responses, 0);
+        const totalCbPicks = allWords.reduce((s, w) => s + w.colorblind_responses, 0);
+
+        statTotalResponses.textContent = totalResponses.toLocaleString();
+        statUniqueWords.textContent = allWords.length;
+        statCbSummary.textContent = `${cbUsers.length} (${totalCbPicks} picks)`;
+        countAll.textContent = allWords.length;
+        countCb.textContent = cbWords.length;
+    } catch (err) {
+        console.error('Error fetching header stats:', err);
+    }
 }
 
 // Fetch Board Structure (480 cells)

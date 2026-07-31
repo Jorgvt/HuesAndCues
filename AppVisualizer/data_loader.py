@@ -72,6 +72,40 @@ class DataLoader:
             self.hc_df['coordinate'] = self.hc_df['coordinate'].astype(str).str.strip()
             self.hc_df['is_colorblind'] = self.hc_df['userId'].isin(self.cb_ids)
 
+            # Build clueId → English word mapping so all languages are pooled.
+            # Fallback translations for clueIds that only appear in Spanish.
+            _fallback_en = {
+                7:  'CANARY',
+                23: 'ASPARAGUS',
+                37: 'LAPIS LAZULI',
+                55: 'MARITIME',
+                60: 'MOSS',
+                71: 'JOY',
+                74: 'SADNESS',
+                85: 'PIKACHU',
+                97: 'PETER PAN',
+                99: 'SUBMARINE',
+            }
+            _en_rows = self.hc_df[self.hc_df['language'] == 'english'][['clueId', 'word']].drop_duplicates('clueId')
+            _clue_to_en = dict(zip(_en_rows['clueId'], _en_rows['word']))
+            # Fill in fallbacks for any clueId missing an English word in the data
+            for cid, en_word in _fallback_en.items():
+                _clue_to_en.setdefault(cid, en_word)
+
+            self.hc_df['english_word'] = self.hc_df['clueId'].map(_clue_to_en)
+
+            # Normalise clueCategory to English (pool Spanish labels + fix typo)
+            _category_map = {
+                'COMESTIBLE': 'FOOD',
+                'ENTORNO':    'ENVIRONMENT',
+                'PIEDRA':     'MINERAL',
+                'STONE':      'MINERAL',
+                'PLANTA':     'PLANT',
+                'SUBJETIVO':  'SUBJECTIVE',
+                'SUBJETIVE':  'SUBJECTIVE',   # fix existing typo
+            }
+            self.hc_df['clueCategory'] = self.hc_df['clueCategory'].replace(_category_map)
+
     def get_board_grid(self):
         """Returns board setup details including dimensions and cell info."""
         rows = sorted(list(set(c['row'] for c in self.board_cells)))
@@ -85,20 +119,20 @@ class DataLoader:
         }
 
     def get_words_list(self):
-        """Returns list of unique words with summary counts."""
+        """Returns list of unique English words with pooled summary counts across all languages."""
         if self.hc_df is None:
             return []
-            
+
         words_summary = []
-        grouped = self.hc_df.groupby('word')
-        
+        grouped = self.hc_df.groupby('english_word')
+
         for word, group in grouped:
             category = group['clueCategory'].iloc[0] if 'clueCategory' in group.columns else "UNKNOWN"
             total = len(group)
             cb_group = group[group['is_colorblind']]
             cb_count = len(cb_group)
             cb_users_count = cb_group['userId'].nunique()
-            
+
             words_summary.append({
                 "word": word,
                 "category": category,
@@ -107,20 +141,21 @@ class DataLoader:
                 "colorblind_users_count": cb_users_count,
                 "has_colorblind": cb_count > 0
             })
-            
+
         # Sort words alphabetically
         words_summary.sort(key=lambda x: x['word'])
         return words_summary
 
     def get_word_analysis(self, word_name):
-        """Returns full response analysis for a single word."""
+        """Returns full response analysis for a single English word, pooling all languages."""
         if self.hc_df is None:
             return None
-            
-        word_data = self.hc_df[self.hc_df['word'] == word_name]
+
+        # Match by canonical English word so all language variants are pooled
+        word_data = self.hc_df[self.hc_df['english_word'] == word_name]
         if word_data.empty:
             return None
-            
+
         category = word_data['clueCategory'].iloc[0] if 'clueCategory' in word_data.columns else ""
         clue_id = int(word_data['clueId'].iloc[0]) if 'clueId' in word_data.columns else None
         
